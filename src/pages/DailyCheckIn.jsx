@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAuth } from '../lib/AuthContext'
 import Cover from '../components/Cover'
 import Toast, { useToast } from '../components/Toast'
@@ -59,6 +59,8 @@ export default function DailyCheckIn() {
   const [sleep, setSleep] = useState('')
   const [score, setScore] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [autoSaved, setAutoSaved] = useState(false)
+  const debounceRef = useRef(null)
 
   const today = todayKey()
   const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
@@ -81,20 +83,47 @@ export default function DailyCheckIn() {
   const checkedCount = SUPP_KEYS.filter(k => checks[k]).length
   const suppPct = Math.round((checkedCount / SUPP_KEYS.length) * 100)
 
-  function toggleCheck(key) {
-    setChecks(prev => ({ ...prev, [key]: !prev[key] }))
+  // Build the full payload from current state (or overrides for mid-update calls)
+  function buildPayload(overrides = {}) {
+    const c = overrides.checks ?? checks
+    return {
+      ...Object.fromEntries(SUPP_KEYS.map(k => [k, !!c[k]])),
+      steps:       (overrides.steps  ?? steps)  ? parseInt(overrides.steps  ?? steps)        : null,
+      walk_time:   (overrides.walk   ?? walk)   ? parseInt(overrides.walk   ?? walk)          : null,
+      pain_level:  parseInt(overrides.pain  ?? pain),
+      sleep_hours: (overrides.sleep  ?? sleep)  ? parseFloat(overrides.sleep ?? sleep)        : null,
+      daily_score: overrides.score  ?? score,
+    }
+  }
+
+  // Immediate save used for checkbox toggles so mobile never loses a check
+  async function toggleCheck(key) {
+    const newChecks = { ...checks, [key]: !checks[key] }
+    setChecks(newChecks)
+    setAutoSaved(false)
+    const error = await saveCheckin(user.id, today, buildPayload({ checks: newChecks }))
+    if (!error) {
+      setAutoSaved(true)
+      setTimeout(() => setAutoSaved(false), 2000)
+    }
+  }
+
+  // Debounced save for slider / number inputs (fires 1 s after last change)
+  function scheduleAutoSave(overrides) {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      const error = await saveCheckin(user.id, today, buildPayload(overrides))
+      if (!error) {
+        setAutoSaved(true)
+        setTimeout(() => setAutoSaved(false), 2000)
+      }
+    }, 1000)
   }
 
   const handleSave = useCallback(async () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
     setSaving(true)
-    const error = await saveCheckin(user.id, today, {
-      ...Object.fromEntries(SUPP_KEYS.map(k => [k, !!checks[k]])),
-      steps: steps ? parseInt(steps) : null,
-      walk_time: walk ? parseInt(walk) : null,
-      pain_level: parseInt(pain),
-      sleep_hours: sleep ? parseFloat(sleep) : null,
-      daily_score: score,
-    })
+    const error = await saveCheckin(user.id, today, buildPayload())
     setSaving(false)
     showToast(error ? 'Error saving — try again' : 'Check-in saved!')
   }, [user, today, checks, steps, walk, pain, sleep, score, showToast])
@@ -192,21 +221,21 @@ export default function DailyCheckIn() {
         <div className="step-card">
           <label>Steps today</label>
           <div className="step-input-row">
-            <input type="number" value={steps} onChange={e => setSteps(e.target.value)} placeholder="0" min="0" max="30000" />
+            <input type="number" value={steps} onChange={e => { setSteps(e.target.value); scheduleAutoSave({ steps: e.target.value }) }} placeholder="0" min="0" max="30000" />
             <span className="step-target">Target: 8,000+</span>
           </div>
         </div>
         <div className="step-card">
           <label>Walking time in shoe (minutes)</label>
           <div className="step-input-row">
-            <input type="number" value={walk} onChange={e => setWalk(e.target.value)} placeholder="0" min="0" max="120" />
+            <input type="number" value={walk} onChange={e => { setWalk(e.target.value); scheduleAutoSave({ walk: e.target.value }) }} placeholder="0" min="0" max="120" />
             <span className="step-target">Build gradually per Vastas PT</span>
           </div>
         </div>
         <div className="step-card">
           <label>Pain level — Achilles (0 = none, 10 = severe)</label>
           <div className="pain-row">
-            <input type="range" className="pain-slider" min="0" max="10" value={pain} onChange={e => setPain(parseInt(e.target.value))} />
+            <input type="range" className="pain-slider" min="0" max="10" value={pain} onChange={e => { const v = parseInt(e.target.value); setPain(v); scheduleAutoSave({ pain: v }) }} />
             <span className="pain-value" style={{ color: PAIN_COLORS[pain] }}>{pain}</span>
             <span className="pain-label">{PAIN_LABELS[pain]}</span>
           </div>
@@ -214,7 +243,7 @@ export default function DailyCheckIn() {
         <div className="step-card">
           <label>Sleep last night (hours)</label>
           <div className="step-input-row">
-            <input type="number" value={sleep} onChange={e => setSleep(e.target.value)} placeholder="0" min="0" max="12" step="0.5" />
+            <input type="number" value={sleep} onChange={e => { setSleep(e.target.value); scheduleAutoSave({ sleep: e.target.value }) }} placeholder="0" min="0" max="12" step="0.5" />
             <span className="step-target">Target: 7.5–8.5 hrs</span>
           </div>
         </div>
@@ -222,16 +251,23 @@ export default function DailyCheckIn() {
         <div className="section-label">Daily score</div>
         <div className="score-row">
           {[{n:1,l:'Off day'},{n:2,l:'Partial'},{n:3,l:'Solid'},{n:4,l:'Strong'},{n:5,l:'Perfect'}].map(({n,l}) => (
-            <button key={n} className={`score-btn${score === n ? ' selected' : ''}`} onClick={() => setScore(n)}>
+            <button key={n} className={`score-btn${score === n ? ' selected' : ''}`} onClick={() => { setScore(n); scheduleAutoSave({ score: n }) }}>
               <span className="score-num">{n}</span>{l}
             </button>
           ))}
         </div>
 
-        <button className="save-btn" onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving…' : 'Save today\'s check-in'}
-        </button>
-        <button className="save-btn secondary" onClick={handleReset}>Reset for new day</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <button className="save-btn" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving…' : 'Save check-in'}
+          </button>
+          <button className="save-btn secondary" onClick={handleReset}>Reset for new day</button>
+          {autoSaved && (
+            <span style={{ fontSize: 12, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              ✓ Auto-saved
+            </span>
+          )}
+        </div>
       </div>
       <Toast visible={visible} msg={msg} />
     </>
