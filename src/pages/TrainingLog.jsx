@@ -28,12 +28,12 @@ const PROGRAM = [
     { name: 'Foam rolling (avoid Achilles)',  sets: '10 min' },
   ]},
   { day: 'Thursday',  focus: 'upper',    focusLabel: 'Upper Pull',       icon: '💪', exercises: [
-    { name: 'Lat Pulldown',                   sets: '4×8–10' },
-    { name: 'Seated Cable Row',               sets: '3×10' },
-    { name: 'Face Pulls (shoulder priority)', sets: '3×15' },
-    { name: 'Dumbbell Bicep Curls',           sets: '3×12' },
-    { name: 'Hammer Curls',                   sets: '2×12' },
-    { name: 'Pallof Press (core)',            sets: '3×10' },
+    { name: 'Dumbbell Row',         sets: '4×10 each arm', desc: 'Brace one knee and hand on bench. Pull DB to hip, elbow close to body. Full stretch at bottom, squeeze at top.' },
+    { name: 'Rear Delt Fly',        sets: '3×15',          desc: 'Hinge forward at hips, DBs hanging. Raise arms out to sides with a slight bend in elbows — squeeze shoulder blades together at top.' },
+    { name: 'Dumbbell Curl',        sets: '3×12',          desc: 'Standing, palms forward. Curl both DBs together. Full range — all the way down, full squeeze at top. No swinging.' },
+    { name: 'Hammer Curl',          sets: '2×12',          desc: 'Same as curl but palms face each other throughout. Targets brachialis and brachioradialis for arm thickness.' },
+    { name: 'Dumbbell Pullover',    sets: '3×12',          desc: 'Lie across bench with upper back supported, hips low. Hold one DB overhead with both hands, lower behind head, pull back over chest. Great lat stretch.' },
+    { name: 'Dead Bug',             sets: '3×10 each side', desc: 'Flat on back, arms straight up, knees at 90°. Slowly lower opposite arm + leg toward floor while pressing lower back down. Return and switch.' },
   ]},
   { day: 'Friday',    focus: 'lower',    focusLabel: 'Lower + Core',     icon: '🏋️', exercises: [
     { name: 'Goblet Squat (bodyweight, slow)', sets: '3×10' },
@@ -170,9 +170,10 @@ export default function TrainingLog() {
               {isOpen && (
                 <div className="day-accordion-body">
                   {d.exercises.map((ex, ei) => (
-                    <div key={ei} className="exercise-row">
+                    <div key={ei} className="exercise-row" style={{ alignItems: ex.desc ? 'flex-start' : 'center' }}>
                       <div
                         className={`ex-check${dayData.exercises[`ex_${ei}`] ? ' done' : ''}`}
+                        style={{ marginTop: ex.desc ? 2 : 0 }}
                         onClick={() => toggleExercise(di, ei)}
                       >
                         {dayData.exercises[`ex_${ei}`] && (
@@ -181,8 +182,13 @@ export default function TrainingLog() {
                           </svg>
                         )}
                       </div>
-                      <span className="ex-name">{ex.name}</span>
-                      <span className="ex-sets">{ex.sets}</span>
+                      <div style={{ flex: 1 }}>
+                        <span className="ex-name">{ex.name}</span>
+                        {ex.desc && (
+                          <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2, lineHeight: 1.5 }}>{ex.desc}</div>
+                        )}
+                      </div>
+                      <span className="ex-sets" style={{ flexShrink: 0, marginLeft: 8 }}>{ex.sets}</span>
                     </div>
                   ))}
                   <div className="session-notes">
