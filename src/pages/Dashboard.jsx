@@ -8,15 +8,18 @@ import { loadWeightLog, loadCheckin, loadMilestones, completeMilestone, todayKey
 const SUPP_KEYS = ['creatine','omega3','d3k2','lionsmane','avmacol','protein','collagen','vitc','mag','ashwa']
 
 const MILESTONES = [
-  { key: 'full-weight-bearing', label: 'Full weight bearing', date: 'Week 6', done: true },
-  { key: 'out-of-boot', label: 'Out of boot', date: 'Apr 2026', done: true },
-  { key: 'walking-in-shoe', label: 'Walking in shoe — 2 heel lifts', date: 'Apr 2026', done: true },
-  { key: 'single-lift', label: 'Single heel lift', date: 'TBD — Vastas PT', done: false },
-  { key: 'no-lift', label: 'No heel lift', date: 'TBD — Vastas PT', done: false },
-  { key: 'jogging', label: 'Jogging cleared', date: 'TBD — UVM Sports Medicine', done: false },
-  { key: 'basketball', label: 'Return to basketball', date: 'TBD', done: false },
-  { key: 'golf', label: 'Return to golf', date: 'TBD', done: false },
-  { key: 'full-sport', label: 'Full return to sport', date: 'TBD', done: false },
+  { key: 'full-weight-bearing',  label: 'Full weight bearing',          date: 'Week 6',                    done: true  },
+  { key: 'out-of-boot',          label: 'Out of boot',                   date: 'Apr 2026',                  done: true  },
+  { key: 'walking-in-shoe',      label: 'Walking in shoe',               date: 'Apr 2026',                  done: true  },
+  { key: 'single-lift',          label: 'Single heel lift',              date: 'May 2026',                  done: true  },
+  { key: 'no-lift',              label: 'No heel lift',                  date: 'May 2026',                  done: true  },
+  { key: 'two-leg-calf-raise',   label: 'Two-leg calf raises',           date: 'Jun 2026',                  done: true  },
+  { key: 'peloton-cleared',      label: 'Peloton / stationary bike',     date: 'Jun 2026',                  done: true  },
+  { key: 'full-upper-body',      label: 'Full upper body training',      date: 'Jun 2026',                  done: true  },
+  { key: 'single-leg-calf-raise', label: 'Single leg calf raise',        date: 'TBD — Vastas PT',           done: false },
+  { key: 'jogging',              label: 'Jogging cleared',               date: 'TBD — UVM Sports Medicine', done: false },
+  { key: 'basketball',           label: 'Return to basketball',          date: 'TBD',                       done: false },
+  { key: 'golf',                 label: 'Return to golf',                date: 'TBD',                       done: false },
 ]
 
 export default function Dashboard() {
@@ -57,17 +60,17 @@ export default function Dashboard() {
 
   return (
     <>
-      <Cover bgText="COMEBACK" label="Andrew's comeback protocol — confidential — April 2026" />
+      <Cover bgText="COMEBACK" label="Andrew's comeback protocol — confidential — June 2026" />
       <div className="page-inner">
         <div className="page-icon">🏆</div>
         <div className="page-title">Andrew's Comeback Protocol</div>
-        <div className="page-sub">Week 8 post-op &nbsp;·&nbsp; Out of boot &nbsp;·&nbsp; Walking in shoe with 2 heel lifts &nbsp;·&nbsp; 230 → 200 lbs &nbsp;·&nbsp; Return to sport</div>
+        <div className="page-sub">Week 14 post-op &nbsp;·&nbsp; Almost fully cleared &nbsp;·&nbsp; Home gym training started &nbsp;·&nbsp; 230 → 200 lbs</div>
 
         <div className="callout callout-green">
           <span className="callout-icon">✅</span>
           <div className="callout-content">
-            <div className="callout-title">Milestone unlocked</div>
-            <div className="callout-text">Out of boot and walking in a shoe with 2 heel lifts as of April 2026. Supplements started tonight. Protocol is live. You are already 3 milestones deep.</div>
+            <div className="callout-title">Week 14 — major milestones cleared</div>
+            <div className="callout-text">Out of boot, walking in shoe, single heel lift, no heel lift, two-leg calf raises, Peloton, and full upper body training — all cleared as of June 2026. 8 milestones done. Single leg calf raise is next.</div>
           </div>
         </div>
         <div className="callout callout-red">
@@ -109,8 +112,8 @@ export default function Dashboard() {
         <div className="stats-row">
           <div className="stat-card stat-green">
             <div className="stat-label">Current phase</div>
-            <div className="stat-value">Wk 8</div>
-            <div className="stat-sub">Post-op recovery</div>
+            <div className="stat-value">Wk 14</div>
+            <div className="stat-sub">Home gym training</div>
           </div>
           <div className="stat-card">
             <div className="stat-label">Current weight</div>

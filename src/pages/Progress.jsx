@@ -11,15 +11,18 @@ import {
 const SUPP_KEYS = ['creatine','omega3','d3k2','lionsmane','avmacol','protein','collagen','vitc','mag','ashwa']
 
 const MILESTONES = [
-  { key: 'full-weight-bearing', label: 'Full weight bearing', date: 'Week 6', done: true },
-  { key: 'out-of-boot',         label: 'Out of boot',         date: 'Apr 2026', done: true },
-  { key: 'walking-in-shoe',     label: 'Walking in shoe — 2 heel lifts', date: 'Apr 2026', done: true },
-  { key: 'single-lift',   label: 'Single heel lift',      date: 'TBD — Vastas PT', done: false },
-  { key: 'no-lift',       label: 'No heel lift',           date: 'TBD — Vastas PT', done: false },
-  { key: 'jogging',       label: 'Jogging cleared',        date: 'TBD — UVM Sports Medicine', done: false },
-  { key: 'basketball',    label: 'Return to basketball',   date: 'TBD', done: false },
-  { key: 'golf',          label: 'Return to golf',         date: 'TBD', done: false },
-  { key: 'full-sport',    label: 'Full return to sport',   date: 'TBD', done: false },
+  { key: 'full-weight-bearing',  label: 'Full weight bearing',          date: 'Week 6',                    done: true  },
+  { key: 'out-of-boot',          label: 'Out of boot',                   date: 'Apr 2026',                  done: true  },
+  { key: 'walking-in-shoe',      label: 'Walking in shoe',               date: 'Apr 2026',                  done: true  },
+  { key: 'single-lift',          label: 'Single heel lift',              date: 'May 2026',                  done: true  },
+  { key: 'no-lift',              label: 'No heel lift',                  date: 'May 2026',                  done: true  },
+  { key: 'two-leg-calf-raise',   label: 'Two-leg calf raises',           date: 'Jun 2026',                  done: true  },
+  { key: 'peloton-cleared',      label: 'Peloton / stationary bike',     date: 'Jun 2026',                  done: true  },
+  { key: 'full-upper-body',      label: 'Full upper body training',      date: 'Jun 2026',                  done: true  },
+  { key: 'single-leg-calf-raise', label: 'Single leg calf raise',        date: 'TBD — Vastas PT',           done: false },
+  { key: 'jogging',              label: 'Jogging cleared',               date: 'TBD — UVM Sports Medicine', done: false },
+  { key: 'basketball',           label: 'Return to basketball',          date: 'TBD',                       done: false },
+  { key: 'golf',                 label: 'Return to golf',                date: 'TBD',                       done: false },
 ]
 
 const CHART_STYLE = {

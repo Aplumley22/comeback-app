@@ -20,6 +20,7 @@ const PROGRAM = [
     { name: 'DB Sumo Squat',           sets: '3×12',          desc: 'Wide stance, toes angled out ~45°. Hold one DB vertically between legs with both hands. Squat keeping chest tall and knees tracking over toes. Targets inner thighs and glutes.' },
     { name: 'DB Hamstring Curl (lying)', sets: '3×12',        desc: 'Lie face down on a bench or floor. Hold a DB between your feet, gripped at the ankles. Curl heels toward glutes and lower slowly. If awkward on floor, use an ankle weight instead.' },
     { name: 'Banded Clamshells',       sets: '3×15 each side', desc: 'Lie on side, band just above knees, hips stacked, knees bent. Keep feet together and rotate the top knee up toward the ceiling. Don\'t let hips rock back. Pause and squeeze at top.' },
+    { name: 'Two-leg Calf Raise',      sets: '3×15',           desc: 'Stand on edge of a step or bench with heels hanging off. Lower heels below step level, then rise up on both feet. Full range of motion. Cleared — controlled and pain-free.' },
   ]},
   { day: 'Wednesday', focus: 'recovery', focusLabel: 'Active Recovery',  icon: '🚶', exercises: [
     { name: 'Walking in shoe — build per PT', sets: 'Per Vastas' },
@@ -45,9 +46,8 @@ const PROGRAM = [
     { name: 'Banded Lateral Walks',    sets: '3×15 each way', desc: 'Band just above knees. Slight squat position throughout. Step sideways keeping tension in the band at all times — don\'t let feet come together. 15 steps each direction.' },
   ]},
   { day: 'Saturday',  focus: 'cardio',   focusLabel: 'Zone 2 Cardio',   icon: '🚴', exercises: [
-    { name: 'Stationary bike (preferred)',     sets: '30–40 min' },
-    { name: 'Rowing machine (light)',          sets: '25–35 min' },
-    { name: 'Conversational pace throughout', sets: '' },
+    { name: 'Peloton ride',           sets: '30–40 min', desc: 'Zone 2 — conversational pace. Keep HR 110–130 bpm based on Polar data. Should be able to hold a full conversation throughout.' },
+    { name: 'Rowing machine (light)', sets: '25–35 min', desc: 'Alternative if Peloton not available. Same Zone 2 intensity.' },
   ]},
   { day: 'Sunday',    focus: 'rest',     focusLabel: 'Full Rest',        icon: '😴', exercises: [
     { name: 'Light walking only',             sets: '' },
@@ -121,7 +121,7 @@ export default function TrainingLog() {
           <span className="callout-icon">🛑</span>
           <div className="callout-content">
             <div className="callout-title">Hard stops — read before every session</div>
-            <div className="callout-text">No jumping, running, or explosive movements. No aggressive calf stretching. No loaded ankle plantar-flexion unless cleared by Vastas. Pain ≤ 3/10 at all times. Stop if sharp Achilles pain.</div>
+            <div className="callout-text">No single leg calf raises yet. No running or jumping. Pain ≤ 3/10 at all times — stop immediately if it spikes.</div>
           </div>
         </div>
 
@@ -213,33 +213,33 @@ export default function TrainingLog() {
         <div className="section-label">8-week progression</div>
         <div className="phase-grid">
           <div className="phase-card current">
-            <div className="phase-title">Weeks 1–2</div>
-            <div className="phase-weeks">Current — Post-op wk 7–8 — 60% effort</div>
+            <div className="phase-title">Weeks 1–2 of training</div>
+            <div className="phase-weeks">Current — light weights, form focus, building habit</div>
             <ul className="phase-list">
               <li>Focus on form — no ego on weights</li>
-              <li>Walking: build 5–15 min/day in shoe</li>
-              <li>Zero Achilles pain during or after</li>
-              <li>Collagen + Vitamin C starts now</li>
+              <li>Two-leg calf raises added — controlled and pain-free</li>
+              <li>No single leg calf work yet</li>
+              <li>Peloton Zone 2 sessions — HR 110–130</li>
             </ul>
           </div>
           <div className="phase-card">
-            <div className="phase-title">Weeks 3–5</div>
-            <div className="phase-weeks">Strength rebuilding — 70% effort</div>
+            <div className="phase-title">Weeks 3–6</div>
+            <div className="phase-weeks">Progressive overload — increase weight weekly</div>
             <ul className="phase-list">
-              <li>Increase weights 5–10% where pain is zero</li>
-              <li>Walking: build to 20–30 min/day</li>
-              <li>Step target: 6,000–8,000/day</li>
-              <li>Zone 2 cardio up to 40 min</li>
+              <li>Add 5–10% weight where pain stays at zero</li>
+              <li>Progress two-leg calf raise — add weight/reps</li>
+              <li>Introduce more volume — 4th sets where appropriate</li>
+              <li>Zone 2 cardio up to 45 min</li>
             </ul>
           </div>
           <div className="phase-card">
-            <div className="phase-title">Weeks 6–8</div>
-            <div className="phase-weeks">Controlled progression — 75–80% effort</div>
+            <div className="phase-title">Weeks 7–12</div>
+            <div className="phase-weeks">Strength building — return to sport prep</div>
             <ul className="phase-list">
-              <li>Continue gradual load increase</li>
-              <li>Eccentric calf loading ONLY if cleared</li>
+              <li>Single leg calf work when cleared by Vastas</li>
               <li>Reassess with UVM Sports Medicine</li>
               <li>DexaFit Burlington scan</li>
+              <li>Return to sport — timeline TBD</li>
             </ul>
           </div>
         </div>
