@@ -7,6 +7,14 @@ import { loadWeightLog, loadCheckin, loadMilestones, completeMilestone, todayKey
 
 const SUPP_KEYS = ['creatine','omega3','d3k2','lionsmane','avmacol','protein','collagen','vitc','mag','ashwa']
 
+const PROTOCOL_START = new Date('2026-06-02')
+const TRIATHLON_DATE = new Date('2027-09-06')
+
+function calcCurrentWeek() {
+  const diffMs = Date.now() - PROTOCOL_START.getTime()
+  return Math.max(1, Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1)
+}
+
 const MILESTONES = [
   { key: 'full-weight-bearing',  label: 'Full weight bearing',          date: 'Week 6',                    done: true  },
   { key: 'out-of-boot',          label: 'Out of boot',                   date: 'Apr 2026',                  done: true  },
@@ -58,6 +66,11 @@ export default function Dashboard() {
   const progress = Math.max(0, Math.min(100, ((start - latestWeight) / (start - goal)) * 100))
   const remaining = Math.max(0, latestWeight - goal).toFixed(1)
 
+  const now = new Date()
+  const daysToTriathlon = Math.max(0, Math.ceil((TRIATHLON_DATE - now) / (1000 * 60 * 60 * 24)))
+  const weeksToTriathlon = Math.floor(daysToTriathlon / 7)
+  const currentTrainingWeek = calcCurrentWeek()
+
   return (
     <>
       <Cover bgText="COMEBACK" label="Andrew's comeback protocol — confidential — June 2026" />
@@ -88,6 +101,37 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <div className="section-label">North Star Goal</div>
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(82,183,136,0.12), rgba(82,183,136,0.04))',
+          border: '1px solid var(--green-border)',
+          borderRadius: 12,
+          padding: '20px 24px',
+          marginBottom: 20,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <span style={{ fontSize: 22 }}>🏊</span>
+            <div>
+              <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: 22, letterSpacing: 1, color: 'var(--green)', lineHeight: 1 }}>Sprint Triathlon</div>
+              <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 3 }}>750m swim · 20km bike · 5km run · September 6, 2027</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div>
+              <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: 52, color: 'var(--green)', lineHeight: 1 }}>{daysToTriathlon}</div>
+              <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 2 }}>Days remaining</div>
+            </div>
+            <div>
+              <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: 52, color: 'var(--green)', lineHeight: 1 }}>{weeksToTriathlon}</div>
+              <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 2 }}>Weeks remaining</div>
+            </div>
+            <div style={{ paddingBottom: 4 }}>
+              <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: 28, color: 'var(--text2)', lineHeight: 1 }}>Training week {currentTrainingWeek}</div>
+              <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 2 }}>Current phase</div>
+            </div>
+          </div>
+        </div>
+
         <div className="section-label">Quick navigation</div>
         <div className="quick-links">
           {[
@@ -112,7 +156,7 @@ export default function Dashboard() {
         <div className="stats-row">
           <div className="stat-card stat-green">
             <div className="stat-label">Current phase</div>
-            <div className="stat-value">Wk 14</div>
+            <div className="stat-value">Wk {currentTrainingWeek}</div>
             <div className="stat-sub">Home gym training</div>
           </div>
           <div className="stat-card">

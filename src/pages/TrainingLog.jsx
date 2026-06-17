@@ -4,54 +4,59 @@ import Cover from '../components/Cover'
 import Toast, { useToast } from '../components/Toast'
 import { loadTrainingWeek, saveTrainingDay } from '../lib/db'
 
+const PROTOCOL_START = new Date('2026-06-02')
+
+function calcCurrentWeek() {
+  const diffMs = Date.now() - PROTOCOL_START.getTime()
+  return Math.max(1, Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1)
+}
+
 const PROGRAM = [
-  { day: 'Monday',    focus: 'upper',    focusLabel: 'Upper Push',       icon: '💪', exercises: [
-    { name: 'Incline DB Press',               sets: '4×8–10' },
-    { name: 'Seated Shoulder Press (machine)', sets: '3×10' },
-    { name: 'Cable Chest Fly',                sets: '3×12' },
-    { name: 'Triceps Pushdowns',              sets: '3×12' },
-    { name: 'Lateral Raises',                 sets: '3×12' },
-    { name: 'Dead Bugs (core)',               sets: '3×12' },
+  { day: 'Monday',    focus: 'upper',    focusLabel: 'Upper Push',      icon: '💪', exercises: [
+    { name: 'DB Incline Press',             sets: '5×8–10',         desc: 'Set bench to 30–45°. Grip DBs at chest height, press up and slightly inward, lower with control. Full range — deep stretch at bottom, don\'t lock out fully at top.' },
+    { name: 'DB Shoulder Press',            sets: '4×10',           desc: 'Sit upright, DBs at shoulder height, palms forward. Press overhead until arms are nearly straight, lower back to shoulders with control. Keep core braced — no arching.' },
+    { name: 'DB Chest Fly',                 sets: '4×12',           desc: 'Lie on flat bench, DBs above chest with slight bend in elbows. Lower arms out wide in an arc until you feel a deep chest stretch. Drive back up squeezing the chest. Keep the elbow angle constant.' },
+    { name: 'DB Tricep Overhead Extension', sets: '3×12',           desc: 'Sit or stand, hold one DB with both hands overhead. Lower behind your head by bending elbows — keep elbows pointing forward and close together. Press back up to full extension. Targets the long head of the tricep.' },
+    { name: 'DB Lateral Raise',             sets: '3×12',           desc: 'Stand with DBs at sides. Raise arms out to sides to shoulder height — lead with elbows, slight bend. Lower slowly. Don\'t swing or shrug. Control the descent for max stimulus.' },
+    { name: 'Dead Bug',                     sets: '3×12',           desc: 'Flat on back, arms straight up, knees at 90°. Press lower back into the floor. Slowly lower one arm and opposite leg toward the floor. Return and switch sides.' },
   ]},
-  { day: 'Tuesday',   focus: 'lower',    focusLabel: 'Lower Body',       icon: '🦵', exercises: [
-    { name: 'DB Romanian Deadlift',    sets: '3×12',          desc: 'Stand with DBs in front of thighs. Hinge at hips, pushing them back, lowering DBs along legs until hamstrings are fully stretched. Drive hips forward to stand. Keep back flat throughout.' },
-    { name: 'DB Goblet Squat',         sets: '3×12 slow',     desc: 'Hold one DB at chest with both hands. Squat down on a 3-count, pause briefly at bottom, drive up through heels. Elbows track inside knees. Keep chest up.' },
-    { name: 'Glute Bridge with DB',    sets: '4×15',          desc: 'Lie on back, knees bent, one DB across hips. Drive hips to ceiling, squeeze glutes hard at the top. Hold 1 second. Lower slowly. Core braced the whole time.' },
-    { name: 'DB Sumo Squat',           sets: '3×12',          desc: 'Wide stance, toes angled out ~45°. Hold one DB vertically between legs with both hands. Squat keeping chest tall and knees tracking over toes. Targets inner thighs and glutes.' },
-    { name: 'DB Hamstring Curl (lying)', sets: '3×12',        desc: 'Lie face down on a bench or floor. Hold a DB between your feet, gripped at the ankles. Curl heels toward glutes and lower slowly. If awkward on floor, use an ankle weight instead.' },
-    { name: 'Banded Clamshells',       sets: '3×15 each side', desc: 'Lie on side, band just above knees, hips stacked, knees bent. Keep feet together and rotate the top knee up toward the ceiling. Don\'t let hips rock back. Pause and squeeze at top.' },
-    { name: 'Two-leg Calf Raise',      sets: '3×15',           desc: 'Stand on edge of a step or bench with heels hanging off. Lower heels below step level, then rise up on both feet. Full range of motion. Cleared — controlled and pain-free.' },
+  { day: 'Tuesday',   focus: 'upper',    focusLabel: 'Upper Pull',      icon: '💪', exercises: [
+    { name: 'DB Row',                       sets: '5×10 each arm',  desc: 'Brace one knee and same-side hand on bench. Pull DB to hip, elbow close to body. Full stretch at bottom — feel the lat lengthen. Squeeze hard at the top. No rotation.' },
+    { name: 'DB Rear Delt Fly',             sets: '5×15',           desc: 'Hinge forward at hips, DBs hanging below chest. Raise arms out to sides with a slight bend in elbows, squeezing shoulder blades together at top. Lower slowly. Light weight, strict form.' },
+    { name: 'DB Curl',                      sets: '3×12',           desc: 'Standing, palms forward. Curl both DBs from full extension to full squeeze. Don\'t swing. Lower all the way down each rep.' },
+    { name: 'Hammer Curl',                  sets: '3×12',           desc: 'Same as curl but palms face each other throughout. Targets brachialis and brachioradialis for arm thickness.' },
+    { name: 'DB Pullover',                  sets: '3×12',           desc: 'Lie across bench with upper back supported, hips low. Hold one DB overhead with both hands, lower behind head, pull back over chest. Great lat stretch.' },
+    { name: 'Dead Bug',                     sets: '3×10 each side', desc: 'Flat on back, arms straight up, knees at 90°. Press lower back into the floor. Slowly lower one arm and opposite leg toward the floor. Return and switch.' },
   ]},
-  { day: 'Wednesday', focus: 'recovery', focusLabel: 'Active Recovery',  icon: '🚶', exercises: [
-    { name: 'Walking in shoe — build per PT', sets: 'Per Vastas' },
-    { name: 'Stationary bike (optional)',     sets: '20–25 min' },
-    { name: 'Hip / hamstring mobility',       sets: '15 min' },
-    { name: 'Ankle ROM — cleared range only', sets: 'Per PT' },
-    { name: 'Foam rolling (avoid Achilles)',  sets: '10 min' },
+  { day: 'Wednesday', focus: 'recovery', focusLabel: 'Active Recovery', icon: '🚶', exercises: [
+    { name: 'Walking in shoe — build per Vastas PT',      sets: 'Per PT' },
+    { name: 'Light mobility — hips, hamstrings, ankles',  sets: '15 min' },
+    { name: 'Band pull-aparts',                           sets: '3×15',   desc: 'Hold band with both hands shoulder-width apart, arms extended forward at chest height. Pull band apart moving hands out to sides, squeezing shoulder blades together. Return slowly. Great for posture and rear delts.' },
+    { name: 'Foam rolling — avoid Achilles directly',     sets: '10 min' },
   ]},
-  { day: 'Thursday',  focus: 'upper',    focusLabel: 'Upper Pull',       icon: '💪', exercises: [
-    { name: 'Dumbbell Row',         sets: '4×10 each arm', desc: 'Brace one knee and hand on bench. Pull DB to hip, elbow close to body. Full stretch at bottom, squeeze at top.' },
-    { name: 'Rear Delt Fly',        sets: '3×15',          desc: 'Hinge forward at hips, DBs hanging. Raise arms out to sides with a slight bend in elbows — squeeze shoulder blades together at top.' },
-    { name: 'Dumbbell Curl',        sets: '3×12',          desc: 'Standing, palms forward. Curl both DBs together. Full range — all the way down, full squeeze at top. No swinging.' },
-    { name: 'Hammer Curl',          sets: '2×12',          desc: 'Same as curl but palms face each other throughout. Targets brachialis and brachioradialis for arm thickness.' },
-    { name: 'Dumbbell Pullover',    sets: '3×12',          desc: 'Lie across bench with upper back supported, hips low. Hold one DB overhead with both hands, lower behind head, pull back over chest. Great lat stretch.' },
-    { name: 'Dead Bug',             sets: '3×10 each side', desc: 'Flat on back, arms straight up, knees at 90°. Slowly lower opposite arm + leg toward floor while pressing lower back down. Return and switch.' },
+  { day: 'Thursday',  focus: 'lower',    focusLabel: 'Lower Body',      icon: '🦵', exercises: [
+    { name: 'DB Romanian Deadlift',         sets: '4×12',           desc: 'Stand with DBs in front of thighs. Hinge at hips, pushing them back, lowering DBs along legs until hamstrings are fully stretched. Drive hips forward to stand. Keep back flat throughout.' },
+    { name: 'DB Goblet Squat',              sets: '4×12 slow',      desc: 'Hold one DB at chest with both hands. Squat down on a 3-count, pause briefly at bottom, drive up through heels. Elbows track inside knees. Keep chest up.' },
+    { name: 'Glute Bridge with DB on bench', sets: '4×15',          desc: 'Lie on floor with feet elevated on bench, DB across hips. Drive hips to ceiling, squeeze glutes hard at top. Hold 1 second. Lower slowly. Feet on bench increases range and glute recruitment.' },
+    { name: 'DB Sumo Squat',                sets: '3×12',           desc: 'Wide stance, toes angled out ~45°. Hold one DB vertically between legs with both hands. Squat keeping chest tall and knees tracking over toes. Targets inner thighs and glutes.' },
+    { name: 'DB Hamstring Curl (lying)',     sets: '3×12',           desc: 'Lie face down on bench or floor. Hold a DB between your feet, gripped at the ankles. Curl heels toward glutes and lower slowly. Use an ankle weight if the DB is awkward.' },
+    { name: 'Banded Clamshells',            sets: '3×15 each side', desc: 'Lie on side, band just above knees, hips stacked, knees bent. Keep feet together and rotate the top knee up toward the ceiling. Don\'t let hips rock back. Pause and squeeze at top.' },
+    { name: 'Two-leg Calf Raise',           sets: '3×15',           desc: 'Stand on edge of bench with heels hanging off. Lower heels below bench level, then rise up on both feet. Full range of motion. Cleared — controlled and pain-free.' },
   ]},
-  { day: 'Friday',    focus: 'lower',    focusLabel: 'Lower + Core',     icon: '🏋️', exercises: [
-    { name: 'DB Step-Up',              sets: '3×10 each leg', desc: 'If cleared by PT. Hold DBs at sides. Step one foot onto a sturdy box or step and drive through that heel to stand. Lower slowly. Don\'t push off the back foot.' },
-    { name: 'DB Split Squat',          sets: '3×10 each leg', desc: 'Bodyweight only — no DBs until Achilles is fully cleared. Front foot flat, back foot on floor or slightly elevated. Lower the back knee toward the floor, keeping front shin vertical. Control the descent.' },
-    { name: 'DB Lateral Lunge',        sets: '3×10 each side', desc: 'Hold DBs at sides. Step wide to one side, sitting back into that hip while keeping the other leg straight. Push back to center through the bent heel. Targets glutes and inner thighs.' },
-    { name: 'Plank',                   sets: '3×45–60 sec',  desc: 'Forearms on the floor, body in a straight line from head to heels. Brace core, squeeze glutes. Don\'t let hips sag or pike. Breathe steadily.' },
-    { name: 'Dead Bug',                sets: '3×10 each side', desc: 'Flat on back, arms straight up, knees at 90°. Press lower back into the floor. Slowly lower one arm and the opposite leg toward the floor. Return and switch sides.' },
-    { name: 'Banded Lateral Walks',    sets: '3×15 each way', desc: 'Band just above knees. Slight squat position throughout. Step sideways keeping tension in the band at all times — don\'t let feet come together. 15 steps each direction.' },
+  { day: 'Friday',    focus: 'lower',    focusLabel: 'Lower + Core',    icon: '🏋️', exercises: [
+    { name: 'DB Step-Up on bench',          sets: '3×10 each leg',  desc: 'If cleared by PT. Hold DBs at sides. Step one foot onto bench and drive through that heel to stand tall. Lower slowly — don\'t push off the back foot.' },
+    { name: 'DB Split Squat',               sets: '3×10 each leg',  desc: 'Hold DBs at sides. Front foot flat, back foot on floor or slightly elevated. Lower the back knee toward the floor, keeping front shin vertical. Control the descent fully.' },
+    { name: 'DB Lateral Lunge',             sets: '3×10 each side', desc: 'Hold DBs at sides. Step wide to one side, sitting back into that hip while keeping the other leg straight. Push back to center through the bent heel. Targets glutes and inner thighs.' },
+    { name: 'Plank',                        sets: '3×45–60 sec',    desc: 'Forearms on the floor, body in a straight line from head to heels. Brace core, squeeze glutes. Don\'t let hips sag or pike. Breathe steadily.' },
+    { name: 'Dead Bug',                     sets: '3×10 each side', desc: 'Flat on back, arms straight up, knees at 90°. Press lower back into the floor. Slowly lower one arm and the opposite leg toward the floor. Return and switch sides.' },
+    { name: 'Banded Lateral Walks',         sets: '3×15 each way',  desc: 'Band just above knees. Slight squat position throughout. Step sideways keeping tension in the band at all times — don\'t let feet come together. 15 steps each direction.' },
   ]},
-  { day: 'Saturday',  focus: 'cardio',   focusLabel: 'Zone 2 Cardio',   icon: '🚴', exercises: [
-    { name: 'Peloton ride',           sets: '30–40 min', desc: 'Zone 2 — conversational pace. Keep HR 110–130 bpm based on Polar data. Should be able to hold a full conversation throughout.' },
-    { name: 'Rowing machine (light)', sets: '25–35 min', desc: 'Alternative if Peloton not available. Same Zone 2 intensity.' },
+  { day: 'Saturday',  focus: 'cardio',   focusLabel: 'Zone 1 Cardio',  icon: '🚴', exercises: [
+    { name: 'Peloton Zone 1 ride',          sets: '45–60 min',      desc: 'PRIMARY. Target HR 110–120 bpm based on Polar data. Easy aerobic — fully conversational throughout. Recovery-paced cardio building the aerobic base for triathlon.' },
+    { name: 'Brisk walking',                sets: '30–45 min',      desc: 'Alternative if Peloton not available. Brisk enough to elevate HR to 100–115 bpm. Flat terrain preferred to limit Achilles load.' },
   ]},
-  { day: 'Sunday',    focus: 'rest',     focusLabel: 'Full Rest',        icon: '😴', exercises: [
-    { name: 'Light walking only',             sets: '' },
-    { name: 'This is where healing happens',  sets: '' },
+  { day: 'Sunday',    focus: 'rest',     focusLabel: 'Full Rest',       icon: '😴', exercises: [
+    { name: 'Light walking only', sets: '' },
   ]},
 ]
 
@@ -60,7 +65,7 @@ const FOCUS_CLASS = { upper: 'focus-upper', lower: 'focus-lower', recovery: 'foc
 export default function TrainingLog() {
   const { user } = useAuth()
   const { visible, msg, showToast } = useToast()
-  const [week, setWeek] = useState(1)
+  const [week, setWeek] = useState(calcCurrentWeek)
   const [weekData, setWeekData] = useState({})
   const [openDay, setOpenDay] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -130,9 +135,9 @@ export default function TrainingLog() {
           <div className="week-nav">
             <button className="week-nav-btn" onClick={() => setWeek(w => Math.max(1, w - 1))}>← Prev</button>
             <span className="week-label">Week {week}</span>
-            <button className="week-nav-btn" onClick={() => setWeek(w => Math.min(8, w + 1))}>Next →</button>
+            <button className="week-nav-btn" onClick={() => setWeek(w => w + 1)}>Next →</button>
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text3)' }}>8-week protocol</div>
+          <div style={{ fontSize: 12, color: 'var(--text3)' }}>Ongoing protocol</div>
         </div>
 
         {/* Week strip */}
