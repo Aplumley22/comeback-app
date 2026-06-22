@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../lib/AuthContext'
 import Cover from '../components/Cover'
 import Toast, { useToast } from '../components/Toast'
-import { loadTrainingWeek, saveTrainingDay } from '../lib/db'
+import { loadTrainingWeek, saveTrainingDay, loadHeelRaiseTotal, addHeelRaises } from '../lib/db'
 
 const PROTOCOL_START = new Date('2026-06-02')
 
@@ -41,7 +41,7 @@ const PROGRAM = [
     { name: 'DB Sumo Squat',                sets: '3×12',           desc: 'Wide stance, toes angled out ~45°. Hold one DB vertically between legs with both hands. Squat keeping chest tall and knees tracking over toes. Targets inner thighs and glutes.' },
     { name: 'DB Hamstring Curl (lying)',     sets: '3×12',           desc: 'Lie face down on bench or floor. Hold a DB between your feet, gripped at the ankles. Curl heels toward glutes and lower slowly. Use an ankle weight if the DB is awkward.' },
     { name: 'Banded Clamshells',            sets: '3×15 each side', desc: 'Lie on side, band just above knees, hips stacked, knees bent. Keep feet together and rotate the top knee up toward the ceiling. Don\'t let hips rock back. Pause and squeeze at top.' },
-    { name: 'Two-leg Calf Raise',           sets: '3×15',           desc: 'Stand on edge of bench with heels hanging off. Lower heels below bench level, then rise up on both feet. Full range of motion. Cleared — controlled and pain-free.' },
+    { name: 'Two-leg Calf Raise',           sets: '3×15',           desc: 'Stand on edge of bench with heels hanging off. Lower heels below bench level, then rise up on both feet. Full range of motion. Cleared — controlled and pain-free.', isCalfRaise: true },
   ]},
   { day: 'Friday',    focus: 'lower',    focusLabel: 'Lower + Core',    icon: '🏋️', exercises: [
     { name: 'DB Step-Up on bench',          sets: '3×10 each leg',  desc: 'If cleared by PT. Hold DBs at sides. Step one foot onto bench and drive through that heel to stand tall. Lower slowly — don\'t push off the back foot.' },
@@ -69,6 +69,9 @@ export default function TrainingLog() {
   const [weekData, setWeekData] = useState({})
   const [openDay, setOpenDay] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [heelRaiseTotal, setHeelRaiseTotal] = useState(0)
+  const [heelRaiseInputs, setHeelRaiseInputs] = useState({})
+  const [heelRaiseLogged, setHeelRaiseLogged] = useState({})
 
   useEffect(() => {
     if (!user) return
@@ -78,6 +81,11 @@ export default function TrainingLog() {
       setWeekData(map)
     })
   }, [user, week])
+
+  useEffect(() => {
+    if (!user) return
+    loadHeelRaiseTotal(user.id).then(total => setHeelRaiseTotal(total))
+  }, [user])
 
   function getDayData(di) {
     return weekData[di] || { exercises: {}, notes: '' }
@@ -96,6 +104,19 @@ export default function TrainingLog() {
     const updated = { ...prev, notes: val }
     setWeekData(p => ({ ...p, [di]: updated }))
     await saveTrainingDay(user.id, week, di, prev.exercises, val)
+  }
+
+  async function handleLogHeelRaises(di, ei) {
+    const key = `${di}-${ei}`
+    const reps = parseInt(heelRaiseInputs[key])
+    if (!reps || reps <= 0) return
+    const { error, total } = await addHeelRaises(user.id, reps)
+    if (!error) {
+      setHeelRaiseTotal(total)
+      setHeelRaiseLogged(prev => ({ ...prev, [key]: reps }))
+      setHeelRaiseInputs(prev => ({ ...prev, [key]: '' }))
+      showToast(`+${reps} reps — ${total.toLocaleString()} / 10,000 total`)
+    }
   }
 
   function toggleAccordion(di) {
@@ -127,6 +148,14 @@ export default function TrainingLog() {
           <div className="callout-content">
             <div className="callout-title">Hard stops — read before every session</div>
             <div className="callout-text">No single leg calf raises yet. No running or jumping. Pain ≤ 3/10 at all times — stop immediately if it spikes.</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(82,183,136,0.06)', border: '1px solid var(--green-border)', borderRadius: 8, marginBottom: 16 }}>
+          <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: 22, color: 'var(--green)', lineHeight: 1 }}>{heelRaiseTotal.toLocaleString()}</span>
+          <span style={{ fontSize: 12, color: 'var(--text3)' }}>/ 10,000 heel raises · log reps when you check off calf raises below</span>
+          <div style={{ marginLeft: 'auto', height: 6, width: 80, background: 'var(--border)', borderRadius: 3, overflow: 'hidden', flexShrink: 0 }}>
+            <div style={{ height: '100%', width: `${Math.min(100, Math.round((heelRaiseTotal / 10000) * 100))}%`, background: 'var(--green)', borderRadius: 3 }} />
           </div>
         </div>
 
@@ -177,10 +206,10 @@ export default function TrainingLog() {
               {isOpen && (
                 <div className="day-accordion-body">
                   {d.exercises.map((ex, ei) => (
-                    <div key={ei} className="exercise-row" style={{ alignItems: ex.desc ? 'flex-start' : 'center' }}>
+                    <div key={ei} className="exercise-row" style={{ alignItems: (ex.desc || ex.isCalfRaise) ? 'flex-start' : 'center' }}>
                       <div
                         className={`ex-check${dayData.exercises[`ex_${ei}`] ? ' done' : ''}`}
-                        style={{ marginTop: ex.desc ? 2 : 0 }}
+                        style={{ marginTop: (ex.desc || ex.isCalfRaise) ? 2 : 0 }}
                         onClick={() => toggleExercise(di, ei)}
                       >
                         {dayData.exercises[`ex_${ei}`] && (
@@ -193,6 +222,29 @@ export default function TrainingLog() {
                         <span className="ex-name">{ex.name}</span>
                         {ex.desc && (
                           <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2, lineHeight: 1.5 }}>{ex.desc}</div>
+                        )}
+                        {ex.isCalfRaise && dayData.exercises[`ex_${ei}`] && (
+                          <div style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <input
+                              type="number"
+                              min="1"
+                              max="999"
+                              placeholder="Reps done?"
+                              value={heelRaiseInputs[`${di}-${ei}`] || ''}
+                              onChange={e => setHeelRaiseInputs(prev => ({ ...prev, [`${di}-${ei}`]: e.target.value }))}
+                              style={{ width: 110, padding: '4px 8px', fontSize: 12, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', outline: 'none' }}
+                            />
+                            <button
+                              onClick={() => handleLogHeelRaises(di, ei)}
+                              style={{ padding: '4px 12px', fontSize: 11, fontWeight: 700, background: 'var(--green)', border: 'none', borderRadius: 6, color: '#0d1117', cursor: 'pointer' }}
+                            >
+                              + Add to 10k
+                            </button>
+                            {heelRaiseLogged[`${di}-${ei}`] && (
+                              <span style={{ fontSize: 11, color: 'var(--green)' }}>✓ {heelRaiseLogged[`${di}-${ei}`]} logged</span>
+                            )}
+                            <span style={{ fontSize: 11, color: 'var(--text3)' }}>{heelRaiseTotal.toLocaleString()} / 10,000</span>
+                          </div>
                         )}
                       </div>
                       <span className="ex-sets" style={{ flexShrink: 0, marginLeft: 8 }}>{ex.sets}</span>

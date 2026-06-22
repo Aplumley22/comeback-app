@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import Cover from '../components/Cover'
 import Toast, { useToast } from '../components/Toast'
-import { loadWeightLog, loadCheckin, loadMilestones, completeMilestone, todayKey } from '../lib/db'
+import { loadWeightLog, loadCheckin, loadMilestones, completeMilestone, loadHeelRaiseTotal, todayKey } from '../lib/db'
 
 const SUPP_KEYS = ['creatine','omega3','d3k2','lionsmane','avmacol','protein','collagen','vitc','mag','ashwa']
 
@@ -24,8 +24,9 @@ const MILESTONES = [
   { key: 'no-lift',              label: 'No heel lift',                  date: 'May 2026',                  done: true  },
   { key: 'two-leg-calf-raise',   label: 'Two-leg calf raises',           date: 'Jun 2026',                  done: true  },
   { key: 'peloton-cleared',      label: 'Peloton / stationary bike',     date: 'Jun 2026',                  done: true  },
-  { key: 'full-upper-body',      label: 'Full upper body training',      date: 'Jun 2026',                  done: true  },
-  { key: 'single-leg-calf-raise', label: 'Single leg calf raise',        date: 'TBD — Vastas PT',           done: false },
+  { key: 'full-upper-body',          label: 'Full upper body training',   date: 'Jun 2026',              done: true  },
+  { key: 'ten-thousand-heel-raises', label: '10,000 Heel Raises',         date: 'Clinical — Vastas PT',  done: false, isProgress: true },
+  { key: 'single-leg-calf-raise',    label: 'Single leg calf raise',      date: 'TBD — Vastas PT',       done: false },
   { key: 'jogging',              label: 'Jogging cleared',               date: 'TBD — UVM Sports Medicine', done: false },
   { key: 'basketball',           label: 'Return to basketball',          date: 'TBD',                       done: false },
   { key: 'golf',                 label: 'Return to golf',                date: 'TBD',                       done: false },
@@ -38,6 +39,7 @@ export default function Dashboard() {
   const [latestWeight, setLatestWeight] = useState(230)
   const [suppPct, setSuppPct] = useState(0)
   const [milestones, setMilestones] = useState({})
+  const [heelRaiseTotal, setHeelRaiseTotal] = useState(0)
 
   useEffect(() => {
     if (!user) return
@@ -55,6 +57,7 @@ export default function Dashboard() {
       rows.forEach(r => { map[r.milestone_key] = true })
       setMilestones(map)
     })
+    loadHeelRaiseTotal(user.id).then(total => setHeelRaiseTotal(total))
   }, [user])
 
   async function handleMilestone(key) {
@@ -66,6 +69,8 @@ export default function Dashboard() {
   const start = 230, goal = 200
   const progress = Math.max(0, Math.min(100, ((start - latestWeight) / (start - goal)) * 100))
   const remaining = Math.max(0, latestWeight - goal).toFixed(1)
+
+  const heelRaisePct = Math.min(100, Math.round((heelRaiseTotal / 10000) * 100))
 
   const now = new Date()
   const daysToTriathlon = Math.max(0, Math.ceil((TRIATHLON_DATE - now) / (1000 * 60 * 60 * 24)))
@@ -201,6 +206,30 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <div className="section-label">10,000 Heel Raises — Vastas PT Clinical Goal</div>
+        <div style={{
+          background: 'rgba(82,183,136,0.06)',
+          border: '1px solid var(--green-border)',
+          borderRadius: 12,
+          padding: '20px 24px',
+          marginBottom: 20,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+            <div>
+              <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: 52, color: 'var(--green)', lineHeight: 1 }}>{heelRaiseTotal.toLocaleString()}</div>
+              <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 3 }}>reps completed</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: 40, color: heelRaisePct >= 100 ? 'var(--green)' : 'var(--text2)', lineHeight: 1 }}>{heelRaisePct}%</div>
+              <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 3 }}>{Math.max(0, 10000 - heelRaiseTotal).toLocaleString()} to go</div>
+            </div>
+          </div>
+          <div style={{ height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden', marginBottom: 10 }}>
+            <div style={{ height: '100%', width: `${heelRaisePct}%`, background: 'var(--green)', borderRadius: 4, transition: 'width 0.4s ease' }} />
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text3)' }}>Log reps in the Training Log after each calf raise set · Two-leg raises count toward the total</div>
+        </div>
+
         <div className="section-label">Weight progress</div>
         <div className="weight-progress-card">
           <div className="weight-goal-row">
@@ -223,7 +252,7 @@ export default function Dashboard() {
         <div className="section-label">Achilles milestones</div>
         <div className="milestone-list">
           {MILESTONES.map(m => {
-            const isDone = m.done || milestones[m.key]
+            const isDone = m.done || milestones[m.key] || (m.isProgress && heelRaiseTotal >= 10000)
             return (
               <div key={m.key} className="milestone-item">
                 {isDone ? (
@@ -232,11 +261,18 @@ export default function Dashboard() {
                       <polyline points="2,6 5,9 10,3" />
                     </svg>
                   </div>
+                ) : m.isProgress ? (
+                  <div className="m-check-pending" style={{ cursor: 'default', borderColor: 'var(--green)' }} />
                 ) : (
                   <div className="m-check-pending" onClick={() => handleMilestone(m.key)} />
                 )}
                 <span className={`m-text${isDone ? ' done' : ''}`}>{m.label}</span>
-                {isDone && <span className="m-badge m-badge-green">Done</span>}
+                {isDone
+                  ? <span className="m-badge m-badge-green">Done</span>
+                  : m.isProgress
+                    ? <span style={{ fontSize: 11, color: 'var(--green)', marginLeft: 8, whiteSpace: 'nowrap' }}>{heelRaiseTotal.toLocaleString()} / 10,000</span>
+                    : null
+                }
                 <span className="m-date">{m.date}</span>
               </div>
             )

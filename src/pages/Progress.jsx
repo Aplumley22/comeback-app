@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../lib/AuthContext'
 import Cover from '../components/Cover'
 import Toast, { useToast } from '../components/Toast'
-import { loadWeightLog, logWeight, loadAllWeeklyReviews, loadMilestones, completeMilestone, loadRecentCheckins, todayKey } from '../lib/db'
+import { loadWeightLog, logWeight, loadAllWeeklyReviews, loadMilestones, completeMilestone, loadRecentCheckins, loadHeelRaiseTotal, todayKey } from '../lib/db'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ReferenceLine, ResponsiveContainer
@@ -18,8 +18,9 @@ const MILESTONES = [
   { key: 'no-lift',              label: 'No heel lift',                  date: 'May 2026',                  done: true  },
   { key: 'two-leg-calf-raise',   label: 'Two-leg calf raises',           date: 'Jun 2026',                  done: true  },
   { key: 'peloton-cleared',      label: 'Peloton / stationary bike',     date: 'Jun 2026',                  done: true  },
-  { key: 'full-upper-body',      label: 'Full upper body training',      date: 'Jun 2026',                  done: true  },
-  { key: 'single-leg-calf-raise', label: 'Single leg calf raise',        date: 'TBD — Vastas PT',           done: false },
+  { key: 'full-upper-body',          label: 'Full upper body training',   date: 'Jun 2026',              done: true  },
+  { key: 'ten-thousand-heel-raises', label: '10,000 Heel Raises',         date: 'Clinical — Vastas PT',  done: false, isProgress: true },
+  { key: 'single-leg-calf-raise',    label: 'Single leg calf raise',      date: 'TBD — Vastas PT',       done: false },
   { key: 'jogging',              label: 'Jogging cleared',               date: 'TBD — UVM Sports Medicine', done: false },
   { key: 'basketball',           label: 'Return to basketball',          date: 'TBD',                       done: false },
   { key: 'golf',                 label: 'Return to golf',                date: 'TBD',                       done: false },
@@ -64,6 +65,7 @@ export default function Progress() {
   const [milestones, setMilestones] = useState({})
   const [weightInput, setWeightInput] = useState('')
   const [loading, setLoading] = useState(true)
+  const [heelRaiseTotal, setHeelRaiseTotal] = useState(0)
 
   useEffect(() => {
     if (!user) return
@@ -72,13 +74,15 @@ export default function Progress() {
       loadAllWeeklyReviews(user.id),
       loadRecentCheckins(user.id),
       loadMilestones(user.id),
-    ]).then(([w, wr, ci, ms]) => {
+      loadHeelRaiseTotal(user.id),
+    ]).then(([w, wr, ci, ms, hrt]) => {
       setWeights(w)
       setWeeklyReviews(wr)
       setRecentCheckins(ci)
       const map = {}
       ms.forEach(r => { map[r.milestone_key] = true })
       setMilestones(map)
+      setHeelRaiseTotal(hrt)
       setLoading(false)
     })
   }, [user])
@@ -268,7 +272,7 @@ export default function Progress() {
         <div className="section-label">Achilles milestones</div>
         <div className="milestone-list">
           {MILESTONES.map(m => {
-            const isDone = m.done || milestones[m.key]
+            const isDone = m.done || milestones[m.key] || (m.isProgress && heelRaiseTotal >= 10000)
             return (
               <div key={m.key} className="milestone-item">
                 {isDone ? (
@@ -277,11 +281,18 @@ export default function Progress() {
                       <polyline points="2,6 5,9 10,3" />
                     </svg>
                   </div>
+                ) : m.isProgress ? (
+                  <div className="m-check-pending" style={{ cursor: 'default', borderColor: 'var(--green)' }} />
                 ) : (
                   <div className="m-check-pending" onClick={() => handleMilestone(m.key)} />
                 )}
                 <span className={`m-text${isDone ? ' done' : ''}`}>{m.label}</span>
-                {isDone && <span className="m-badge m-badge-green">Done</span>}
+                {isDone
+                  ? <span className="m-badge m-badge-green">Done</span>
+                  : m.isProgress
+                    ? <span style={{ fontSize: 11, color: 'var(--green)', marginLeft: 8, whiteSpace: 'nowrap' }}>{heelRaiseTotal.toLocaleString()} / 10,000</span>
+                    : null
+                }
                 <span className="m-date">{m.date}</span>
               </div>
             )

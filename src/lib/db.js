@@ -119,6 +119,31 @@ export async function saveLabTest(userId, testName, status, result) {
   return error
 }
 
+// ─── HEEL RAISE TRACKER ───────────────────────
+// Stored as a synthetic row in lab_tests (no new table needed).
+// test_name '__heel_raise_total__' is ignored by LabWork.jsx display.
+export async function loadHeelRaiseTotal(userId) {
+  const { data } = await supabase
+    .from('lab_tests')
+    .select('result')
+    .eq('user_id', userId)
+    .eq('test_name', '__heel_raise_total__')
+    .maybeSingle()
+  return data ? parseInt(data.result) || 0 : 0
+}
+
+export async function addHeelRaises(userId, repsToAdd) {
+  const current = await loadHeelRaiseTotal(userId)
+  const newTotal = current + repsToAdd
+  const { error } = await supabase
+    .from('lab_tests')
+    .upsert(
+      { user_id: userId, test_name: '__heel_raise_total__', status: 'tracking', result: String(newTotal), updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,test_name' }
+    )
+  return { error, total: newTotal }
+}
+
 // ─── CHECKIN STATS (last 7 days for compliance rings) ──
 export async function loadRecentCheckins(userId) {
   const { data } = await supabase
