@@ -126,3 +126,22 @@ create table if not exists lab_tests (
 alter table lab_tests enable row level security;
 create policy "Users manage own lab tests"
   on lab_tests for all using (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────
+-- POLAR SESSIONS
+-- ─────────────────────────────────────────────
+create table if not exists polar_sessions (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  date date not null,
+  session_type text not null,
+  duration_min integer not null,
+  avg_hr integer,
+  max_hr integer,
+  calories integer,
+  notes text,
+  created_at timestamptz default now()
+);
+alter table polar_sessions enable row level security;
+create policy "Users manage own polar sessions"
+  on polar_sessions for all using (auth.uid() = user_id);

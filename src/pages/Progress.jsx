@@ -2,13 +2,56 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../lib/AuthContext'
 import Cover from '../components/Cover'
 import Toast, { useToast } from '../components/Toast'
-import { loadWeightLog, logWeight, loadAllWeeklyReviews, loadMilestones, completeMilestone, loadRecentCheckins, loadHeelRaiseTotal, todayKey } from '../lib/db'
+import { loadWeightLog, logWeight, loadAllWeeklyReviews, loadMilestones, completeMilestone, loadRecentCheckins, loadHeelRaiseTotal, todayKey, loadPolarSessions, savePolarSession, seedPolarSessions } from '../lib/db'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ReferenceLine, ResponsiveContainer
 } from 'recharts'
 
 const SUPP_KEYS = ['creatine','omega3','d3k2','lionsmane','avmacol','protein','collagen','vitc','mag','ashwa']
+
+const SESSION_TYPES = ['Strength Training', 'Peloton Zone 1', 'PT', 'Other']
+
+const SEED_SESSIONS = [
+  { date: '2026-06-02', session_type: 'Strength Training', duration_min: 33, avg_hr: 100, max_hr: 150, calories: 156, notes: 'Upper Push' },
+  { date: '2026-06-05', session_type: 'Strength Training', duration_min: 40, avg_hr: 105, max_hr: 134, calories: 201, notes: 'Upper Pull' },
+  { date: '2026-06-11', session_type: 'Strength Training', duration_min: 36, avg_hr: 135, max_hr: 172, calories: 351, notes: '' },
+  { date: '2026-06-12', session_type: 'Strength Training', duration_min: 33, avg_hr: 130, max_hr: 159, calories: 291, notes: 'Upper Push' },
+  { date: '2026-06-12', session_type: 'Peloton Zone 1', duration_min: 32, avg_hr: 119, max_hr: 131, calories: 236, notes: '' },
+  { date: '2026-06-13', session_type: 'Peloton Zone 1', duration_min: 32, avg_hr: 112, max_hr: 127, calories: 201, notes: '' },
+  { date: '2026-06-14', session_type: 'Strength Training', duration_min: 48, avg_hr: 127, max_hr: 170, calories: 404, notes: 'Upper Push' },
+  { date: '2026-06-18', session_type: 'Peloton Zone 1', duration_min: 34, avg_hr: 139, max_hr: 156, calories: 351, notes: '' },
+  { date: '2026-06-22', session_type: 'PT', duration_min: 43, avg_hr: 97, max_hr: 138, calories: 198, notes: '' },
+  { date: '2026-06-22', session_type: 'Strength Training', duration_min: 46, avg_hr: 125, max_hr: 167, calories: 380, notes: 'Upper Push' },
+  { date: '2026-06-22', session_type: 'Peloton Zone 1', duration_min: 33, avg_hr: 116, max_hr: 129, calories: 223, notes: '' },
+  { date: '2026-06-23', session_type: 'Strength Training', duration_min: 43, avg_hr: 145, max_hr: 173, calories: 476, notes: 'Upper Pull' },
+  { date: '2026-06-23', session_type: 'Peloton Zone 1', duration_min: 31, avg_hr: 121, max_hr: 137, calories: 237, notes: '' },
+  { date: '2026-06-25', session_type: 'Strength Training', duration_min: 47, avg_hr: 122, max_hr: 160, calories: 366, notes: 'Upper Push' },
+  { date: '2026-06-26', session_type: 'Strength Training', duration_min: 44, avg_hr: 133, max_hr: 173, calories: 415, notes: 'Upper Pull' },
+  { date: '2026-06-26', session_type: 'Peloton Zone 1', duration_min: 32, avg_hr: 120, max_hr: 131, calories: 240, notes: '' },
+  { date: '2026-06-27', session_type: 'Peloton Zone 1', duration_min: 48, avg_hr: 119, max_hr: 128, calories: 351, notes: '' },
+  { date: '2026-06-29', session_type: 'Strength Training', duration_min: 45, avg_hr: 132, max_hr: 169, calories: 415, notes: 'Upper Push' },
+  { date: '2026-06-29', session_type: 'Peloton Zone 1', duration_min: 33, avg_hr: 116, max_hr: 131, calories: 223, notes: '' },
+  { date: '2026-06-30', session_type: 'Strength Training', duration_min: 40, avg_hr: 142, max_hr: 178, calories: 430, notes: 'Lower Body' },
+  { date: '2026-06-30', session_type: 'Peloton Zone 1', duration_min: 47, avg_hr: 118, max_hr: 129, calories: 330, notes: '' },
+  { date: '2026-07-02', session_type: 'Strength Training', duration_min: 40, avg_hr: 158, max_hr: 179, calories: 514, notes: 'Upper Pull' },
+  { date: '2026-07-02', session_type: 'Peloton Zone 1', duration_min: 37, avg_hr: 124, max_hr: 146, calories: 300, notes: '' },
+  { date: '2026-07-14', session_type: 'Strength Training', duration_min: 47, avg_hr: 128, max_hr: 170, calories: 401, notes: 'Upper Push' },
+  { date: '2026-07-14', session_type: 'Peloton Zone 1', duration_min: 30, avg_hr: 116, max_hr: 139, calories: 206, notes: '' },
+]
+
+function getMondayOfWeek(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00')
+  const day = d.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  d.setDate(d.getDate() + diff)
+  return d.toISOString().slice(0, 10)
+}
+
+function formatSessionDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
 
 const MILESTONES = [
   { key: 'full-weight-bearing',  label: 'Full weight bearing',          date: 'Week 6',                    done: true  },
@@ -66,6 +109,17 @@ export default function Progress() {
   const [weightInput, setWeightInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [heelRaiseTotal, setHeelRaiseTotal] = useState(0)
+  const [sessions, setSessions] = useState([])
+  const [savingSession, setSavingSession] = useState(false)
+  const [sessionForm, setSessionForm] = useState({
+    date: todayKey(),
+    session_type: 'Strength Training',
+    duration_min: '',
+    avg_hr: '',
+    max_hr: '',
+    calories: '',
+    notes: '',
+  })
 
   useEffect(() => {
     if (!user) return
@@ -75,7 +129,8 @@ export default function Progress() {
       loadRecentCheckins(user.id),
       loadMilestones(user.id),
       loadHeelRaiseTotal(user.id),
-    ]).then(([w, wr, ci, ms, hrt]) => {
+      loadPolarSessions(user.id),
+    ]).then(async ([w, wr, ci, ms, hrt, ps]) => {
       setWeights(w)
       setWeeklyReviews(wr)
       setRecentCheckins(ci)
@@ -83,6 +138,13 @@ export default function Progress() {
       ms.forEach(r => { map[r.milestone_key] = true })
       setMilestones(map)
       setHeelRaiseTotal(hrt)
+      if (ps.length === 0) {
+        await seedPolarSessions(user.id, SEED_SESSIONS)
+        const seeded = await loadPolarSessions(user.id)
+        setSessions(seeded)
+      } else {
+        setSessions(ps)
+      }
       setLoading(false)
     })
   }, [user])
@@ -105,6 +167,30 @@ export default function Progress() {
     await completeMilestone(user.id, key)
     setMilestones(prev => ({ ...prev, [key]: true }))
     showToast('Milestone unlocked! 🎉')
+  }
+
+  async function handleLogSession() {
+    const { date, session_type, duration_min, avg_hr, max_hr, calories } = sessionForm
+    if (!date || !session_type || !duration_min) { showToast('Date, type, and duration are required'); return }
+    setSavingSession(true)
+    const payload = {
+      date,
+      session_type,
+      duration_min: parseInt(duration_min),
+      avg_hr: avg_hr ? parseInt(avg_hr) : null,
+      max_hr: max_hr ? parseInt(max_hr) : null,
+      calories: calories ? parseInt(calories) : null,
+      notes: sessionForm.notes || null,
+    }
+    const error = await savePolarSession(user.id, payload)
+    if (!error) {
+      setSessions(prev => [...prev, { ...payload, id: Date.now() }].sort((a, b) => a.date.localeCompare(b.date)))
+      setSessionForm({ date: todayKey(), session_type: 'Strength Training', duration_min: '', avg_hr: '', max_hr: '', calories: '', notes: '' })
+      showToast('Session logged!')
+    } else {
+      showToast('Error saving session')
+    }
+    setSavingSession(false)
   }
 
   const latestWeight = weights.length ? weights[weights.length - 1].weight : 230
@@ -142,6 +228,34 @@ export default function Progress() {
     labelStyle: { color: '#f0ede8' },
     itemStyle: { color: '#9a9690' },
   }
+
+  // Polar session stats
+  const strengthSessions = sessions.filter(s => s.session_type === 'Strength Training')
+  const totalCals = sessions.reduce((sum, s) => sum + (s.calories || 0), 0)
+  const avgStrengthCals = strengthSessions.length
+    ? Math.round(strengthSessions.reduce((sum, s) => sum + (s.calories || 0), 0) / strengthSessions.length)
+    : 0
+  const avgStrengthHR = strengthSessions.filter(s => s.avg_hr).length
+    ? Math.round(strengthSessions.filter(s => s.avg_hr).reduce((sum, s) => sum + s.avg_hr, 0) / strengthSessions.filter(s => s.avg_hr).length)
+    : 0
+  const bestSession = sessions.length
+    ? sessions.reduce((best, s) => (s.calories || 0) > (best.calories || 0) ? s : best, sessions[0])
+    : null
+
+  // Cumulative calorie burn by week
+  const calorieChartData = (() => {
+    const weekMap = {}
+    sessions.forEach(s => {
+      const mon = getMondayOfWeek(s.date)
+      weekMap[mon] = (weekMap[mon] || 0) + (s.calories || 0)
+    })
+    const weeks = Object.keys(weekMap).sort()
+    let cumulative = 0
+    return weeks.map(w => {
+      cumulative += weekMap[w]
+      return { label: formatSessionDate(w), cumulative }
+    })
+  })()
 
   return (
     <>
@@ -267,6 +381,173 @@ export default function Progress() {
             </div>
           </div>
         </div>
+
+        {/* Polar Session Tracker */}
+        <div className="section-label">Polar Session Tracker</div>
+
+        {/* Log session form */}
+        <div className="session-form-card">
+          <div className="session-form-grid">
+            <div className="session-form-field">
+              <label>Date</label>
+              <input
+                type="date"
+                value={sessionForm.date}
+                onChange={e => setSessionForm(f => ({ ...f, date: e.target.value }))}
+              />
+            </div>
+            <div className="session-form-field">
+              <label>Session Type</label>
+              <select
+                value={sessionForm.session_type}
+                onChange={e => setSessionForm(f => ({ ...f, session_type: e.target.value }))}
+              >
+                {SESSION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="session-form-grid-4">
+            <div className="session-form-field">
+              <label>Duration (min)</label>
+              <input
+                type="number" min="1" max="300"
+                value={sessionForm.duration_min}
+                onChange={e => setSessionForm(f => ({ ...f, duration_min: e.target.value }))}
+                placeholder="45"
+              />
+            </div>
+            <div className="session-form-field">
+              <label>Avg HR</label>
+              <input
+                type="number" min="50" max="220"
+                value={sessionForm.avg_hr}
+                onChange={e => setSessionForm(f => ({ ...f, avg_hr: e.target.value }))}
+                placeholder="130"
+              />
+            </div>
+            <div className="session-form-field">
+              <label>Max HR</label>
+              <input
+                type="number" min="50" max="220"
+                value={sessionForm.max_hr}
+                onChange={e => setSessionForm(f => ({ ...f, max_hr: e.target.value }))}
+                placeholder="170"
+              />
+            </div>
+            <div className="session-form-field">
+              <label>Calories</label>
+              <input
+                type="number" min="0" max="2000"
+                value={sessionForm.calories}
+                onChange={e => setSessionForm(f => ({ ...f, calories: e.target.value }))}
+                placeholder="400"
+              />
+            </div>
+          </div>
+          <div className="session-form-field" style={{ marginBottom: 16 }}>
+            <label>Notes (optional)</label>
+            <textarea
+              value={sessionForm.notes}
+              onChange={e => setSessionForm(f => ({ ...f, notes: e.target.value }))}
+              placeholder="Upper Push, felt strong..."
+              rows={2}
+            />
+          </div>
+          <button className="save-btn" onClick={handleLogSession} disabled={savingSession}>
+            {savingSession ? 'Saving…' : 'Log Session'}
+          </button>
+        </div>
+
+        {/* Aggregate stats */}
+        <div className="stats-row-5">
+          <div className="stat-card">
+            <div className="stat-label">Total Sessions</div>
+            <div className="stat-value">{sessions.length}</div>
+            <div className="stat-sub">all time</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Total Calories</div>
+            <div className="stat-value stat-green" style={{ color: 'var(--green)' }}>{totalCals.toLocaleString()}</div>
+            <div className="stat-sub">all time</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Avg Cal / Strength</div>
+            <div className="stat-value">{avgStrengthCals}</div>
+            <div className="stat-sub">per session</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Avg HR Strength</div>
+            <div className="stat-value">{avgStrengthHR}</div>
+            <div className="stat-sub">bpm average</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Best Session</div>
+            <div className="stat-value stat-amber" style={{ color: 'var(--amber)' }}>{bestSession?.calories ?? '—'}</div>
+            <div className="stat-sub">{bestSession ? `${formatSessionDate(bestSession.date)} · ${bestSession.notes || bestSession.session_type}` : '—'}</div>
+          </div>
+        </div>
+
+        {/* Cumulative calorie chart */}
+        <div className="chart-card" style={{ marginBottom: 16 }}>
+          <div className="chart-card-header">
+            <div>
+              <div className="chart-card-title">Cumulative Calories Burned</div>
+              <div className="chart-card-sub">total calories per week, running sum</div>
+            </div>
+          </div>
+          <div style={{ height: 200 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={calorieChartData}>
+                <CartesianGrid stroke={CHART_STYLE.cartesianGrid} />
+                <XAxis dataKey="label" tick={{ fill: CHART_STYLE.axisColor, fontSize: 10 }} />
+                <YAxis tick={{ fill: CHART_STYLE.axisColor, fontSize: 10 }} />
+                <Tooltip {...tooltipStyle} formatter={v => [`${v.toLocaleString()} cal`, 'Cumulative']} />
+                <Line type="monotone" dataKey="cumulative" stroke="#d4a017" strokeWidth={2} dot={{ fill: '#d4a017', r: 4 }} activeDot={{ r: 6 }} connectNulls />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Sessions table */}
+        <table className="lab-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Duration</th>
+              <th>Avg HR</th>
+              <th>Max HR</th>
+              <th>Calories</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...sessions].reverse().map((s, i) => (
+              <tr key={s.id || i}>
+                <td style={{ whiteSpace: 'nowrap' }}>{formatSessionDate(s.date)}</td>
+                <td>
+                  <span style={{
+                    fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+                    background: s.session_type === 'Strength Training' ? 'var(--blue-bg)' : s.session_type === 'Peloton Zone 1' ? 'rgba(150,100,200,0.15)' : s.session_type === 'PT' ? 'var(--green-bg)' : 'var(--surface2)',
+                    color: s.session_type === 'Strength Training' ? 'var(--blue)' : s.session_type === 'Peloton Zone 1' ? '#b088d4' : s.session_type === 'PT' ? 'var(--green)' : 'var(--text3)',
+                  }}>
+                    {s.session_type === 'Strength Training' ? 'Strength' : s.session_type === 'Peloton Zone 1' ? 'Peloton' : s.session_type}
+                  </span>
+                </td>
+                <td>{s.duration_min} min</td>
+                <td>{s.avg_hr ?? '—'}</td>
+                <td>{s.max_hr ?? '—'}</td>
+                <td style={{ color: s.calories >= 400 ? 'var(--green)' : 'inherit', fontWeight: s.calories >= 400 ? 500 : 400 }}>
+                  {s.calories != null ? s.calories : '—'}
+                </td>
+                <td style={{ color: 'var(--text3)', fontSize: 12 }}>{s.notes || ''}</td>
+              </tr>
+            ))}
+            {sessions.length === 0 && (
+              <tr><td colSpan={7} style={{ color: 'var(--text3)', textAlign: 'center', padding: 24 }}>No sessions logged yet</td></tr>
+            )}
+          </tbody>
+        </table>
 
         {/* Milestones */}
         <div className="section-label">Achilles milestones</div>

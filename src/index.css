@@ -434,6 +434,28 @@ body {
 }
 .toast.show { transform: translateY(0); opacity: 1; }
 
+/* ─── STATS ROW 5-COL ─── */
+.stats-row-5 { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 8px; margin-bottom: 16px; }
+
+/* ─── POLAR SESSION FORM ─── */
+.session-form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+.session-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.session-form-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+.session-form-field { display: flex; flex-direction: column; gap: 6px; }
+.session-form-field label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text3); font-weight: 500; }
+.session-form-field input,
+.session-form-field select,
+.session-form-field textarea {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+  padding: 8px 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none;
+  width: 100%;
+}
+.session-form-field input:focus,
+.session-form-field select:focus,
+.session-form-field textarea:focus { border-color: var(--green); }
+.session-form-field select { appearance: none; cursor: pointer; }
+.session-form-field textarea { resize: vertical; min-height: 48px; }
+
 /* ─── MOBILE RESPONSIVE ─── */
 @media (max-width: 768px) {
   .page-inner { padding: 20px 20px 80px; }
@@ -446,4 +468,7 @@ body {
   .compliance-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
   .weekly-grid { grid-template-columns: 1fr; }
   .cover-label { left: 20px; }
+  .stats-row-5 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .session-form-grid { grid-template-columns: 1fr; }
+  .session-form-grid-4 { grid-template-columns: repeat(2, 1fr); }
 }

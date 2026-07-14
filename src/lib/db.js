@@ -144,6 +144,31 @@ export async function addHeelRaises(userId, repsToAdd) {
   return { error, total: newTotal }
 }
 
+// ─── POLAR SESSIONS ───────────────────────────
+export async function loadPolarSessions(userId) {
+  const { data } = await supabase
+    .from('polar_sessions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: true })
+    .order('created_at', { ascending: true })
+  return data || []
+}
+
+export async function savePolarSession(userId, session) {
+  const { error } = await supabase
+    .from('polar_sessions')
+    .insert({ user_id: userId, ...session })
+  return error
+}
+
+export async function seedPolarSessions(userId, sessions) {
+  const { error } = await supabase
+    .from('polar_sessions')
+    .insert(sessions.map(s => ({ user_id: userId, ...s })))
+  return error
+}
+
 // ─── CHECKIN STATS (last 7 days for compliance rings) ──
 export async function loadRecentCheckins(userId) {
   const { data } = await supabase
